@@ -103,6 +103,23 @@ def fernet_giver_enc() -> object:
         sys.exit(f"{RED}Error during returning fernet object: {e}{RESET}")
 
 
+def fernet_giver_dec() -> object:
+    '''
+    Function to return the fernet object for decryption
+    '''
+    try:
+        kname = input("\nEnter the name for the key file: ")
+        if not exists(kname):
+            sys.exit(f"{RED}Error: File {kname} doesn't exist{RESET}")
+
+        fernet = Fernet(load_key(kname))
+        print(f"{GREEN}Successfully loaded key from {kname} {RESET}")
+        return fernet
+
+    except Exception as e:
+        sys.exit(f"{RED}Error during returning fernet object: {e}{RESET}")
+
+
 def msg_encrypter(msg: str, fernet: object) -> str:
     '''
     Function that takes two arguments:
@@ -115,6 +132,19 @@ def msg_encrypter(msg: str, fernet: object) -> str:
         return enc_msg.decode(encoding = "utf-8", errors = "strict")
     except Exception as e:
         sys.exit(f"{RED}Error during encrypting message: {e}{RESET}")
+
+def msg_decrypter(msg: str, fernet: object) -> str:
+    '''
+    Function that takes two arguments:
+        - string to decrypt
+        - fernet object to decrypt the string with
+    Returns the decrypted string decoded as utf-8
+    '''
+    try:
+        dec_msg = fernet.decrypt(msg.encode(encoding = "utf-8", errors = "strict"))
+        return dec_msg.decode(encoding = "utf-8", errors = "strict")
+    except Exception as e:
+        sys.exit(f"Error during decrypting message: {e}")
 
 
 if __name__ == "__main__":
@@ -162,6 +192,12 @@ if __name__ == "__main__":
             fernet = fernet_giver_enc()
             msg = input("\nEnter the message that you want to encrypt: ")
             print(f"\nThe encrypted message is:\n{CYAN}{msg_encrypter(msg, fernet)}{RESET}")
+
+        elif menu_choice == 4:
+            fernet = fernet_giver_dec()
+            msg = input("\nEnter the message that you want to decrypt: ")
+            print(f"\nThe decrypted message is:\n{CYAN}{msg_decrypter(msg, fernet)}{RESET}")
+
 
 
     except Exception as e:
