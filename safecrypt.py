@@ -32,12 +32,97 @@ CYAN = "\033[96m"       # For enc and dec messages
 MAGENTA = "\033[95m"    # For menus
 
 
+def gen_key(kname: str) -> bytes:
+    '''
+    Function to generate a new key and store it in a file.
+    Asks user to overwrite the file if the file already exists.
+    '''
+    try:
+        if exists(kname):
+            response = input(f"{RED}Warning: {kname} already exists, overwrite it? (y|n): {RESET}").lower()
+            if response == 'n':
+                sys.exit(f"{GREEN}Operation canceled by user.{RESET}")
+            elif response != 'y':
+                sys.exit(f"{RED}Error: Invalid choice{RESET}")
+
+            # Overwrite key if user confirms
+            key = Fernet.generate_key()
+            with open(kname, 'wb') as kfile:
+                _ = kfile.write(key)
+            print(f"{GREEN}Successfully overwritten {kname} with a new key{RESET}")
+            return key
+        else:
+            # Create new key if file does not exist
+            key = Fernet.generate_key()
+            with open(kname, 'wb') as kfile:
+                _ = kfile.write(key)
+            print(f"{GREEN}Successfully created a new key file: {kname}{RESET}")
+            return key
+    except Exception as e:
+        sys.exit(f"{RED}Error during generating the key: {e}{RESET}")
+
+
+def load_key(kname: str) -> bytes:
+    '''
+    Function to load the key from the file given.
+    '''
+    try:
+        if not exists(kname):
+            sys.exit(f"{RED}Error: File {kname} does not exist!{RESET}")
+        with open(kname, 'rb') as kfile:
+            return kfile.read()
+    except Exception as e:
+        sys.exit(f"{RED}Error during loading the key: {e}{RESET}")
+
+
+def fernet_giver_enc() -> object:
+    '''
+    Function to return the fernet object for encryption.
+    Enables user to either generate a new key or load the key from a file.
+    '''
+    try:
+        print()
+        print(f"{MAGENTA}1 --> Generate a new key")
+        print(f"2 --> Load the key from a file{RESET}")
+        enc_choice = int(input("choose: "))
+
+        if enc_choice == 1:
+            kname = input("\nEnter the name for the key file: ")
+            fernet = Fernet(gen_key(kname))
+            return fernet
+
+        elif enc_choice != 2:
+            sys.exit(f"{RED}Error: Invalid choice{RESET}")
+
+        kname = input("\nEnter the name for the key file: ")
+        fernet = Fernet(load_key(kname))
+        print(f"{GREEN}Successfully loaded key from {kname}{RESET}")
+        return fernet
+
+    except Exception as e:
+        sys.exit(f"{RED}Error during returning fernet object: {e}{RESET}")
+
+
+def msg_encrypter(msg: str, fernet: object) -> str:
+    '''
+    Function that takes two arguments:
+        - string to encrypt
+        - fernet object to encrypt the string with
+    Returns the encrypted string encoded as utf-8
+    '''
+    try:
+        enc_msg = fernet.encrypt(msg.encode(encoding = "utf-8", errors = "strict"))
+        return enc_msg.decode(encoding = "utf-8", errors = "strict")
+    except Exception as e:
+        sys.exit(f"{RED}Error during encrypting message: {e}{RESET}")
+
+
 if __name__ == "__main__":
     try:
         if os.name == 'nt':
-           _ = os.system("cls")
+            _ = os.system("cls")
         else:
-           _ = os.system("clear")
+            _ = os.system("clear")
         print(f'''{GREEN}
     ________________________________________________________________________
     |                                                                       |
@@ -72,6 +157,12 @@ if __name__ == "__main__":
 
         if menu_choice == 0:
             sys.exit(f"{GREEN}Exitting the program...{RESET}")
+
+        elif menu_choice == 1:
+            fernet = fernet_giver_enc()
+            msg = input("\nEnter the message that you want to encrypt: ")
+            print(f"\nThe encrypted message is:\n{CYAN}{msg_encrypter(msg, fernet)}{RESET}")
+
 
     except Exception as e:
         sys.exit(f"{RED}Error during choosing from above: {e}{RESET}")
