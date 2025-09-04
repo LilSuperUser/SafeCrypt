@@ -133,6 +133,52 @@ def msg_encrypter(msg: str, fernet: object) -> str:
     except Exception as e:
         sys.exit(f"{RED}Error during encrypting message: {e}{RESET}")
 
+
+def file_encrypter(fname: str, fernet: object) -> None:
+    '''
+    Function that takes two arguments:
+        - fname to encrypt
+        - fernet object to encryp the file with
+    Asks user for the output file name, if none is provided, uses the input file name
+    warns user that the oputfile already exists and asks to overwrite it.
+    Returns nothing
+    '''
+    try:
+        if not exists(fname):
+            sys.exit(f"{RED}Error: File {fname} doesn't exist!{RESET}")
+
+        # reading original file
+        with open(fname, 'rb') as f:
+            data = f.read()
+            enc_data = fernet.encrypt(data)
+
+        # ask user for output file path/name
+        output_fname = input(f"Enter the name/path for the output file (leave blank to overwrite {fname}): ").strip()
+        if not output_fname:
+            output_fname = fname
+
+        # check if the output file exists
+        if exists(output_fname) and output_fname != fname:
+            response = input(f"{RED}Warning: {output_fname} already exists. Overwrite it? (y|n): {RESET}").lower()
+            if response != 'y':
+                if response == 'n':
+                    sys.exit("{GRN}Operation canceled{RST}")
+                else:
+                    sys.exit("{RED}Error: Invalid choice{RST}")
+
+        # write encrypted data to the chosen file
+        with open(output_fname, 'wb') as f:
+            f.write(enc_data)
+
+        if output_fname == fname:
+            print(f"{GREEN}{fname} has been successfully encrypted{RESET}")
+        else:
+            print(f"{GREEN}Created new file {output_fname} with encrypted data from {fname}{RESET}")
+
+    except Exception as e:
+        sys.exit(f"{RED}Error during encryption: {e}{RESET}")
+
+
 def msg_decrypter(msg: str, fernet: object) -> str:
     '''
     Function that takes two arguments:
@@ -194,6 +240,11 @@ if __name__ == "__main__":
             fernet = fernet_giver_enc()
             msg = input("\nEnter the message that you want to encrypt: ")
             print(f"\nThe encrypted message is:\n{CYAN}{msg_encrypter(msg, fernet)}{RESET}")
+
+        elif menu_choice == 2:
+            fernet = fernet_giver_enc()
+            fname = input("\nEnter file name or path to the file that you want to encrypt: ")
+            file_encrypter(fname, fernet)
 
         elif menu_choice == 4:
             fernet = fernet_giver_dec()
