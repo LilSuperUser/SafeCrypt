@@ -193,6 +193,51 @@ def msg_decrypter(msg: str, fernet: object) -> str:
         sys.exit(f"Error during decrypting message: {e}")
 
 
+def file_decrypter(fname: str, fernet: object) -> None:
+    '''
+    Function that takes two arguments:
+        - fname to decrypt
+        - fernet object to decrypt the file with
+    Checks if the file already exists on the disk, exit if it doesn't and if it does
+    then read the original content, decrypts it, ask for the output file name
+    if no output file name is provided use the input file name to store the decrypted data
+    '''
+    try:
+        if not exists(fname):
+            sys.exit(f"{RED}Error: File {fname} doesn't exist!{RESET}")
+
+        # reading original file
+        with open(fname, 'rb') as f:
+            enc_data = f.read()
+            data = fernet.decrypt(enc_data)
+
+        # ask user for output file path/name
+        output_fname = input(f"Enter the name/path for the output file (leave blank to overwrite {fname}): ").strip()
+        if not output_fname:
+            output_fname = fname
+
+        # check if the output file exists
+        if exists(output_fname) and output_fname != fname:
+            response = input(f"{RED}Warning: {output_fname} already exists. Overwrite it? (y|n): {RESET}").lower()
+            if response != 'y':
+                if response == 'n':
+                    sys.exit(f"{RED}Operation canceled{RESET}")
+                else:
+                    sys.exit(f"{RED}Error: Invalid choice{RESET}")
+
+        # write decrypted data to the chosen file
+        with open(output_fname, 'wb') as f:
+            f.write(data)
+
+        if output_fname == fname:
+            print(f"{GREEN}{fname} has been successfully decrypted.{RESET}")
+        else:
+            print(f"{GREEN}Created new file {output_fname} with decrypted data from {fname}{RESET}")
+
+    except Exception as e:
+        sys.exit(f"{RED}Error during decryption: {e}{RESET}")
+
+
 if __name__ == "__main__":
     try:
         if os.name == 'nt':
@@ -251,7 +296,10 @@ if __name__ == "__main__":
             msg = input("\nEnter the message that you want to decrypt: ")
             print(f"\nThe decrypted message is:\n{CYAN}{msg_decrypter(msg, fernet)}{RESET}")
 
-
+        elif menu_choice == 5:
+            fernet = fernet_giver_dec()
+            fname = input("\nEnter file name or path to the file that you want to decrypt: ")
+            file_decrypter(fname, fernet)
 
     except Exception as e:
         sys.exit(f"{RED}Error during choosing from above: {e}{RESET}")
