@@ -179,6 +179,60 @@ def file_encrypter(fname: str, fernet: object) -> None:
         sys.exit(f"{RED}Error during encryption: {e}{RESET}")
 
 
+def dir_encrypter(dname: str, fernet: object) -> None:
+    '''
+    Function to encrypt all the files present in the given directory.
+    Takes two argumetns:
+        - dname: str (name of the directory to encrypt)
+        - fernet: obj (fernet object to encrypt the files with)
+    If subdirectories are present in the given directory, they are skipped.
+    At last, the logs are printed.
+    '''
+    try:
+        if not os.path.isdir(dname):
+            sys.exit(f"{RED}Error: Directory {dname} does not exist!{RESET}")
+
+        counter = 0
+        enc_files = []
+        encountered_dirs = []
+
+        print()
+        with os.scandir(dname) as entries:
+            for entry in entries:
+                if entry.is_file():
+                    file_path = entry.path
+                    print(f"{GREEN}Encrypting file: {RESET}{file_path}")
+
+                    with open(file_path, 'rb') as f:
+                        data = f.read()
+                        enc_data = fernet.encrypt(data)
+
+                    with open(file_path, 'wb') as f:
+                        f.write(enc_data)
+
+                    enc_files.append(file_path)
+                    counter += 1
+                elif entry.is_dir():
+                    encountered_dirs.append(entry.path)
+
+        print(f"{GREEN}\nLogs:{RESET}")
+        print(f"{GREEN}    Directory targeted: {RESET}{dname}")
+        print(f"{GREEN}    Total number of files encrypted: {RESET}{counter}")
+        print(f"{GREEN}    Files that were encrypted:{RESET}")
+        for ef in enc_files:
+            print(f"        - {ef}")
+
+        if encountered_dirs:
+            print(f"{GREEN}    Subdirectories encountered (but not processed):{RESET}")
+            for ed in encountered_dirs:
+                print(f"        - {ed}/")
+        else:
+            print(f"{GREEN}    No subdirectories were present in: {RESET}{dname}")
+
+    except Exception as e:
+        sys.exit(f"{RED}Error during encrypting files in dir {dname}: {e}{RESET}")
+
+
 def msg_decrypter(msg: str, fernet: object) -> str:
     '''
     Function that takes two arguments:
@@ -290,6 +344,12 @@ if __name__ == "__main__":
             fernet = fernet_giver_enc()
             fname = input("\nEnter file name or path to the file that you want to encrypt: ")
             file_encrypter(fname, fernet)
+
+        elif menu_choice == 3:
+            fernet = fernet_giver_enc()
+            print(f"\n{RED}Warning: Make sure key file is not present in the directory that you give{RESET}")
+            dname = input("Enter dir name or path of the dir that you want to encrypt: ")
+            dir_encrypter(dname, fernet)
 
         elif menu_choice == 4:
             fernet = fernet_giver_dec()
