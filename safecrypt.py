@@ -292,6 +292,60 @@ def file_decrypter(fname: str, fernet: object) -> None:
         sys.exit(f"{RED}Error during decryption: {e}{RESET}")
 
 
+def dir_decrypter(dname: str, fernet:object) -> None:
+    '''
+    Function to decrypt all the files present in the given directory.
+    Takes two arguments:
+        - dname: str (name of the directory to decrypt
+        - fernet: obj (fernet object to decrypt the files with)
+    If subdirectories are present in the given directory, they are skipped.
+    At last, the logs are printed.
+    '''
+    try:
+        if not os.path.isdir(dname):
+            sys.exit(f"{RED}Error: Directory {dname} does not exist!{RESET}")
+
+        counter = 0
+        dec_files = []
+        encountered_dirs = []
+
+        print()
+        with os.scandir(dname) as entries:
+            for entry in entries:
+                if entry.is_file():
+                    file_path = entry.path
+                    print(f"{GREEN}Decrypting file: {RESET}{file_path}")
+
+                    with open(file_path, 'rb') as f:
+                        enc_data = f.read()
+                        data = fernet.decrypt(enc_data)
+
+                    with open(file_path, 'wb') as f:
+                        f.write(data)
+
+                    dec_files.append(file_path)
+                    counter += 1
+                elif entry.is_dir():
+                    encountered_dirs.append(entry.path)
+
+        print(f"{GREEN}\nLogs:{RESET}")
+        print(f"{GREEN}    Directory targeted: {RESET}{dname}")
+        print(f"{GREEN}    Total number of files decrypted: {RESET}{counter}")
+        print(f"{GREEN}    Files that were decrypted:{RESET}")
+        for df in dec_files:
+            print(f"        - {df}")
+
+        if encountered_dirs:
+            print(f"{GREEN}    Subdirectories encountered (but not processed):{RESET}")
+            for ed in encountered_dirs:
+                print(f"        - {ed}/")
+        else:
+            print(f"{GREEN}    No subdirectories were present in: {RESET}{dname}")
+
+    except Exception as e:
+        sys.exit(f"{RED}Error during decrypting files in dir {dname}: {e}{RESET}")
+
+
 if __name__ == "__main__":
     try:
         if os.name == 'nt':
@@ -360,6 +414,12 @@ if __name__ == "__main__":
             fernet = fernet_giver_dec()
             fname = input("\nEnter file name or path to the file that you want to decrypt: ")
             file_decrypter(fname, fernet)
+
+        elif menu_choice == 6:
+            fernet = fernet_giver_dec()
+            print(f"\n{RED}Warning: Make sure key file is not present in the directory that you give{RESET}")
+            dname = input("Enter dir name or path of the dir that you want to decrypt: ")
+            dir_decrypter(dname, fernet)
 
     except Exception as e:
         sys.exit(f"{RED}Error during choosing from above: {e}{RESET}")
