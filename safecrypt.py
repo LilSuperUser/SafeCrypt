@@ -346,6 +346,100 @@ def dir_decrypter(dname: str, fernet:object) -> None:
         sys.exit(f"{RED}Error during decrypting files in dir {dname}: {e}{RESET}")
 
 
+def shredder(fname: str, level: int) -> None:
+    '''
+    Function to shred a given file by a give level.
+    Takes two arguments:
+        - fname: str (name of the file to shred)
+        - level: int (level of the shredding)
+    Overwrites the file level number of times and then deletes it.
+    '''
+    try:
+        if not exists(fname):
+            sys.exit(f"{RED}Error: File {fname} does not exist!")
+
+        response = input(f"{RED}Warning: {fname} will be shredded. Do you wish to proceed? (y|n): {RESET}").lower()
+
+        if response == 'y':
+            file_size = os.path.getsize(fname)
+
+            with open(fname, 'wb+') as f:
+                for i in range(level):
+                    f.seek(0)
+                    f.write(os.urandom(file_size))
+
+            os.remove(fname)
+            print(f"{GREEN}Successfully shredded the file {fname} {RESET}")
+
+        elif response == 'n':
+            sys.exit(f"{GREEN}Operation cancelled by user{RESET}")
+
+        else:
+            sys.exit(f"{RED}Error: Invalid choice{RESET}")
+
+    except Exception as e:
+        print(f"{RED}Error during shredding file: {e}")
+
+
+def dir_shredder(dname: str, level: int) -> None:
+    '''
+    Function to shred a directory (recursively) by a given level.
+    Takes two arguments:
+        - dname: str (name of the directory to shred)
+        - level: int (level of the shredding)
+    Overwrites the directory, level number of times and then deletes it.
+    '''
+    try:
+        if not isdir(dname):
+            sys.exit(f"{RED}Error: Directory {dname} does not exist!")
+
+        f_counter = 0
+        d_counter = 0
+        shred_files = []
+        shred_dirs = []
+        print()
+        response = input(f"{RED}Warning: All files in {dname} will be shredded. Do you wish to proceed? (y|n): {RESET}").lower()
+        if response == 'y':
+            for path, dirs, files in os.walk(dname, topdown=False):
+                for file in files:
+                    fpath = join(path, file)
+                    print(f"{GREEN}Shredding file: {RESET}{fpath}")
+                    for i in range(level):
+                        with open(fpath, 'wb') as f:
+                            f.seek(0)
+                            f.write(os.urandom(os.path.getsize(fpath)))
+                            f.flush()
+                    os.remove(fpath)
+                    shred_files.append(fpath)
+                    f_counter += 1
+
+                for dir in dirs:
+                    dir_path = join(path, dir)
+                    print(f"{GREEN}Removing directory: {RESET}{dir_path}")
+                    os.rmdir(dir_path)  # Remove empty subdirectories
+                    shred_dirs.append(dir_path)
+                    d_counter+=1
+
+            os.rmdir(dname)
+
+            # Print log information
+            print(f"{GREEN}\nLogs:{RESET}")
+            print(f"{GREEN}    Directory targeted: {RESET}{dname}")
+            print(f"{GREEN}    Total number of files shredded: {RESET}{f_counter}")
+            print(f"{GREEN}    Total number of sub-directories shredded: {RESET}{d_counter}")
+            print(f"{GREEN}    Files that were shredded{RESET}:")
+            for sf in shred_files:
+                print(f"        - {sf}")
+            print(f"{GREEN}    Sub-directories that were shredded{RESET}:")
+            for sd in shred_dirs:
+                print(f"        - {sd}")
+        else:
+            print(f"{GREEN}Operation canceled by user.{RESET}")
+
+    except Exception as e:
+        print(f"{RED}Error during shredding directory: {e}")
+
+
 if __name__ == "__main__":
     try:
         if os.name == 'nt':
@@ -421,5 +515,22 @@ if __name__ == "__main__":
             dname = input("Enter dir name or path of the dir that you want to decrypt: ")
             dir_decrypter(dname, fernet)
 
+        elif menu_choice == 7:
+            fname = input("Enter file name or path to the file that you want to shred: ")
+            level = int(input("Enter the level of shredding: "))
+            shredder(fname, level)
+
+        elif menu_choice == 8:
+            print(f"\n{RED}Warning: Make nothing important is present in the directory that you give{RESET}")
+            dname = input("Enter directory name or directory path that you want to shred: ")
+            level = int(input("Enter the level of shredding: "))
+            dir_shredder(dname, level)
+
+        else:
+            sys.exit(f"{RED}Error: Invalid choice{RESET}")
+
     except Exception as e:
         sys.exit(f"{RED}Error during choosing from above: {e}{RESET}")
+
+else:
+    print(f"{RED}The script is to be run directly and not imported!{RESET}")
